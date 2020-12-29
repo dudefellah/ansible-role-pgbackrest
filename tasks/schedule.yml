@@ -128,7 +128,7 @@
   when:
     - "ansible_service_mgr == 'systemd'"
     - "pgbackrest_systemd_timer_enabled"
-    - "pgbackrest_incr_backup_systemd_timer_oncalendar"
+    - "pgbackrest_incr_backup_systemd_timer_oncalendar is not none"
 
 - name: Install the pgbackrest incremental backup timer
   ansible.builtin.template:
@@ -144,7 +144,7 @@
   when:
     - "ansible_service_mgr == 'systemd'"
     - "pgbackrest_systemd_timer_enabled"
-    - "pgbackrest_incr_backup_systemd_timer_oncalendar"
+    - "pgbackrest_incr_backup_systemd_timer_oncalendar is not none"
 
 - name: Install the pgbackrest full backup cron job
   ansible.builtin.cron:
