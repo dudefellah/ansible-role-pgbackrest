@@ -1,0 +1,56 @@
+---
+# Grab the current status. Don't fail if the stanza doesn't exist, but fail
+# for other errors.
+- name: Check the status of the stanza
+  command: >-
+    pgbackrest
+      --config={{ pgbackrest_conf_path }}
+      --stanza={{ stanza_name }}
+      --log-level-console={{ pgbackrest_log_level }}
+      check
+  register: stanza_check
+  changed_when: false
+  failed_when:
+    - "stanza_check.rc != 0"
+    - >-
+      (
+        ('has a stanza-create been performed?' not in stanza_check.stderr) and
+        ('does not exist' not in stanza_check.stderr)
+      )
+  become: true
+  become_user: "{{ pgbackrest_owner }}"
+
+- name: Create the stanza
+  command: >-
+    pgbackrest --config={{ pgbackrest_conf_path }}
+      --stanza={{ stanza_name }}
+      --log-level-console={{ pgbackrest_log_level }}
+      stanza-create
+  register: stanza_create_cmd
+  when:
+    - >-
+      ('skipped' not in stanza_check) or
+      (not stanza_check.skipped)
+    - >-
+      (stanza_check.rc != 0) or
+      ('has a stanza-create been performed?' in stanza_check.stderr) or
+      ('does not exist' in stanza_check.stderr)
+  become: true
+  become_user: "{{ pgbackrest_owner }}"
+
+- name: Test create an initial backup
+  command: >-
+    pgbackrest
+      --config={{ pgbackrest_conf_path }}
+      --stanza={{ stanza_name }}
+      --log-level-console={{ pgbackrest_log_level }}
+      backup
+  when:
+    - "not pgbackrest_initial_backup"
+    - >-
+      ('skipped' not in stanza_create_cmd) or
+      (not stanza_create_cmd.skipped)
+    - "stanza_create_cmd.rc == 0"
+    - "'completed successfully' in stanza_create_cmd.stdout"
+  become: true
+  become_user: "{{ pgbackrest_owner }}"

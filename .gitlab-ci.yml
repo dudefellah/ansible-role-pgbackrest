@@ -1,0 +1,20 @@
+---
+stages:
+  - test
+  - publish
+
+include:
+  - remote: "https://gitlab.com/dudefellah/ci-templates/-/raw/master/ansible/Molecule.Docker.gitlab-ci.yml"
+  - remote: "https://gitlab.com/dudefellah/ci-templates/-/raw/master/ansible/Galaxy.gitlab-ci.yml"
+
+molecule:
+  stage: test
+  extends: .ansible_molecule_docker
+  tags:
+    - docker-socket-runner
+
+publish:
+  stage: publish
+  extends: .ansible_galaxy_publish
+  tags:
+    - docker-socket-runner

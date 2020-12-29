@@ -1,0 +1,74 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+lint: |
+  set -e
+  yamllint .
+  ansible-lint .
+platforms:
+  - name: pgbackrest-molecule-centos-7-instance
+    image: "centos:centos7"
+    tmpfs:
+      - /run
+      - /tmp
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    command: /usr/sbin/init
+  - name: pgbackrest-molecule-centos-8-instance
+    image: "centos:centos8"
+    tmpfs:
+     - /run
+     - /tmp
+    volumes:
+     - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    command: /usr/sbin/init
+  - name: pgbackrest-molecule-debian-buster-instance
+    image: python:3-buster
+    tmpfs:
+      - /run
+      - /tmp
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+  - name: pgbackrest-molecule-debian-stretch-instance
+    image: python:3-stretch
+    tmpfs:
+      - /run
+      - /tmp
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+provisioner:
+  name: ansible
+  playbooks:
+    prepare: prepare.yml
+  inventory:
+    host_vars:
+      pgbackrest-molecule-centos-7-instance:
+        pgbackrest_conf_cluster_stanzas:
+          main:
+            pg_path: /var/lib/pgsql/data
+      pgbackrest-molecule-centos-8-instance:
+        pgbackrest_conf_cluster_stanzas:
+          main:
+            pg_path: /var/lib/pgsql/data
+      pgbackrest-molecule-debian-stretch-instance:
+        pgbackrest_postgresql_conf:
+          archive_command: "pgbackrest --config={{ pgbackrest_conf_path }} --stanza=main archive-push %p"
+          archive_mode: "on"
+          listen_addresses: "*"
+          log_filename: "postgresql.log"
+          log_line_prefix: ""
+          max_wal_senders: 3
+          wal_level: replica
+        pgbackrest_conf_cluster_stanzas:
+          main:
+            db_path: /var/lib/postgresql/9.6/main
+      pgbackrest-molecule-debian-buster-instance:
+        pgbackrest_conf_cluster_stanzas:
+          main:
+            pg_path: /var/lib/postgresql/11/main
+verifier:
+  name: testinfra
+  options:
+    verbose: true

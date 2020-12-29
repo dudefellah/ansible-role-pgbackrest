@@ -1,0 +1,234 @@
+---
+- name: >-
+    Remove systemd .service and .timer files if the systemd timer is disbabled
+  file:
+    path: "{{ _pgbackrest_systemd_file }}"
+    state: absent
+  notify: systemctl daemon-reload
+  loop:
+    - "/etc/systemd/system/{{ pgbackrest_systemd_timer_name }}-full.service"
+    - "/etc/systemd/system/{{ pgbackrest_systemd_timer_name }}-full.timer"
+  loop_control:
+    loop_var: _pgbackrest_systemd_file
+  when:
+    - >-
+      (ansible_service_mgr != 'systemd') or
+      (not pgbackrest_systemd_timer_enabled)
+
+- name: >-
+    Remove systemd diff .service and .timer files if the systemd timer is
+    disbabled or the diff calendar value isn't set
+  file:
+    path: "{{ _pgbackrest_systemd_file }}"
+    state: absent
+  notify: systemctl daemon-reload
+  loop:
+    - "/etc/systemd/system/{{ pgbackrest_systemd_timer_name }}-diff.service"
+    - "/etc/systemd/system/{{ pgbackrest_systemd_timer_name }}-diff.timer"
+  loop_control:
+    loop_var: _pgbackrest_systemd_file
+  when:
+    - >-
+      (ansible_service_mgr != 'systemd') or
+      (not pgbackrest_systemd_timer_enabled) or
+      (not pgbackrest_diff_backup_systemd_timer_oncalendar)
+
+- name: >-
+    Remove systemd incr .service and .timer files if the systemd timer is
+    disbabled or the diff calendar value isn't set
+  file:
+    path: "{{ _pgbackrest_systemd_file }}"
+    state: absent
+  notify: systemctl daemon-reload
+  loop:
+    - "/etc/systemd/system/{{ pgbackrest_systemd_timer_name }}-incr.service"
+    - "/etc/systemd/system/{{ pgbackrest_systemd_timer_name }}-incr.timer"
+  loop_control:
+    loop_var: _pgbackrest_systemd_file
+  when:
+    - >-
+      (ansible_service_mgr != 'systemd') or
+      (not pgbackrest_systemd_timer_enabled) or
+      (not pgbackrest_incr_backup_systemd_timer_oncalendar)
+
+- name: Install the pgbackrest full backup service
+  ansible.builtin.template:
+    src: etc/systemd/system/pgbackrest-backup.service.j2
+    dest: "/etc/systemd/system/{{ pgbackrest_systemd_timer_name }}-full.service"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: systemctl daemon-reload
+  vars:
+    pgbackrest_systemd_timer_oncalendar: "{{ pgbackrest_full_backup_systemd_timer_oncalendar }}"
+    _pgbackrest_backup_type: full
+  when:
+    - "ansible_service_mgr == 'systemd'"
+    - "pgbackrest_systemd_timer_enabled"
+
+- name: Install the pgbackrest full backup timer
+  ansible.builtin.template:
+    src: etc/systemd/system/pgbackrest-backup.timer.j2
+    dest: "/etc/systemd/system/{{ pgbackrest_systemd_timer_name }}-full.timer"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: systemctl daemon-reload
+  vars:
+    pgbackrest_systemd_timer_oncalendar: "{{ pgbackrest_full_backup_systemd_timer_oncalendar }}"
+  when:
+    - "ansible_service_mgr == 'systemd'"
+    - "pgbackrest_systemd_timer_enabled"
+
+- name: Install the pgbackrest differential backup service
+  ansible.builtin.template:
+    src: etc/systemd/system/pgbackrest-backup.service.j2
+    dest: "/etc/systemd/system/{{ pgbackrest_systemd_timer_name }}-diff.service"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: systemctl daemon-reload
+  vars:
+    pgbackrest_systemd_timer_oncalendar: >-
+      {{ pgbackrest_diff_backup_systemd_timer_oncalendar }}
+    _pgbackrest_backup_type: diff
+  when:
+    - "ansible_service_mgr == 'systemd'"
+    - "pgbackrest_systemd_timer_enabled"
+    - "pgbackrest_diff_backup_systemd_timer_oncalendar"
+
+- name: Install the pgbackrest differential backup timer
+  ansible.builtin.template:
+    src: etc/systemd/system/pgbackrest-backup.timer.j2
+    dest: "/etc/systemd/system/{{ pgbackrest_systemd_timer_name }}-diff.timer"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: systemctl daemon-reload
+  vars:
+    pgbackrest_systemd_timer_oncalendar: >-
+      {{ pgbackrest_diff_backup_systemd_timer_oncalendar }}
+  when:
+    - "ansible_service_mgr == 'systemd'"
+    - "pgbackrest_systemd_timer_enabled"
+    - "pgbackrest_diff_backup_systemd_timer_oncalendar"
+
+- name: Install the pgbackrest incremental backup service
+  ansible.builtin.template:
+    src: etc/systemd/system/pgbackrest-backup.service.j2
+    dest: "/etc/systemd/system/{{ pgbackrest_systemd_timer_name }}-incr.service"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: systemctl daemon-reload
+  vars:
+    pgbackrest_systemd_timer_oncalendar: >-
+      {{ pgbackrest_incr_backup_systemd_timer_oncalendar }}
+    _pgbackrest_backup_type: incr
+  when:
+    - "ansible_service_mgr == 'systemd'"
+    - "pgbackrest_systemd_timer_enabled"
+    - "pgbackrest_incr_backup_systemd_timer_oncalendar"
+
+- name: Install the pgbackrest incremental backup timer
+  ansible.builtin.template:
+    src: etc/systemd/system/pgbackrest-backup.timer.j2
+    dest: "/etc/systemd/system/{{ pgbackrest_systemd_timer_name }}-incr.timer"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: systemctl daemon-reload
+  vars:
+    pgbackrest_systemd_timer_oncalendar: >-
+      {{ pgbackrest_incr_backup_systemd_timer_oncalendar }}
+  when:
+    - "ansible_service_mgr == 'systemd'"
+    - "pgbackrest_systemd_timer_enabled"
+    - "pgbackrest_incr_backup_systemd_timer_oncalendar"
+
+- name: Install the pgbackrest full backup cron job
+  ansible.builtin.cron:
+    name: "pgbackrest backup schedule"
+    cron_file: pgbackrest
+    job: >-
+      {{ pgbackrest_backup_script_path }}
+      -s "{{ pgbackrest_backup_stanzas | join(',') }}"
+      full
+    minute: "{{ (pgbackrest_full_cron_schedule.split())[0] }}"
+    hour: "{{ (pgbackrest_full_cron_schedule.split())[1] }}"
+    day: "{{ (pgbackrest_full_cron_schedule.split())[2] }}"
+    month: "{{ (pgbackrest_full_cron_schedule.split())[3] }}"
+    weekday: "{{ (pgbackrest_full_cron_schedule.split())[4] }}"
+    owner: root
+    group: root
+    mode: "0644"
+    state: >-
+      {%- if pgbackrest_cron_enabled -%}
+        present
+      {%- else -%}
+        absent
+      {%- endif -%}
+  notify: systemctl daemon-reload
+  when:
+    - "pgbackrest_cron_enabled"
+    - "not pgbackrest_systemd_timer_enabled"
+
+- name: Install the pgbackrest differential backup cron job
+  ansible.builtin.cron:
+    name: "pgbackrest backup schedule"
+    cron_file: pgbackrest
+    job: >-
+      {{ pgbackrest_backup_script_path }}
+      -s "{{ pgbackrest_backup_stanzas | join(',') }}"
+      diff
+    minute: "{{ (pgbackrest_diff_cron_schedule.split())[0] }}"
+    hour: "{{ (pgbackrest_diff_cron_schedule.split())[1] }}"
+    day: "{{ (pgbackrest_diff_cron_schedule.split())[2] }}"
+    month: "{{ (pgbackrest_diff_cron_schedule.split())[3] }}"
+    weekday: "{{ (pgbackrest_diff_cron_schedule.split())[4] }}"
+    owner: root
+    group: root
+    mode: "0644"
+    state: >-
+      {%- if (
+          pgbackrest_cron_enabled and
+          pgbackrest_diff_cron_schedule
+      ) -%}
+        present
+      {%- else -%}
+        absent
+      {%- endif -%}
+  notify: systemctl daemon-reload
+  when:
+    - "pgbackrest_cron_enabled"
+    - "not pgbackrest_systemd_timer_enabled"
+
+- name: Install the pgbackrest incremental backup cron job
+  ansible.builtin.cron:
+    name: "pgbackrest backup schedule"
+    cron_file: pgbackrest
+    job: >-
+      {{ pgbackrest_backup_script_path }}
+      -s "{{ pgbackrest_backup_stanzas | join(',') }}"
+      incr
+    minute: "{{ (pgbackrest_cron_schedule.split())[0] }}"
+    hour: "{{ (pgbackrest_cron_schedule.split())[1] }}"
+    day: "{{ (pgbackrest_cron_schedule.split())[2] }}"
+    month: "{{ (pgbackrest_cron_schedule.split())[3] }}"
+    weekday: "{{ (pgbackrest_cron_schedule.split())[4] }}"
+    owner: root
+    group: root
+    mode: "0644"
+    state: >-
+      {%- if (
+          pgbackrest_cron_enabled and
+          pgbackrest_incr_cron_schedule
+      ) -%}
+        present
+      {%- else -%}
+        absent
+      {%- endif -%}
+  notify: systemctl daemon-reload
+  when:
+    - "pgbackrest_cron_enabled"
+    - "not pgbackrest_systemd_timer_enabled"

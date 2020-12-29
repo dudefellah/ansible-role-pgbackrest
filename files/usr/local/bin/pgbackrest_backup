@@ -1,0 +1,103 @@
+#!/bin/sh
+
+LOG_LEVEL=${LOG_LEVEL-info}
+STANZAS=${STANZAS-'.*'}
+PGBACKREST_CONF=${PGBACKREST_CONF-/etc/pgbackrest/pgbackrest.conf}
+QUIET=0
+
+usage() {
+        cat >&2 <<EOOPTS
+$(basename $0) [OPTIONS] <backup_type>
+
+backup_type: The type of backup to take. This should be one of 'full', 'diff'
+             or 'incr'.
+
+OPTIONS:
+  -h:         Print this help message
+
+  -q;         Quiet mode. Don't print any warnings.
+
+  -c <C>:     Specify the location of the pgbackrest.conf file with <C>.
+              Default: $PGBACKREST_CONF
+
+  -l <L>:     Set the log level to <L>
+              Default: $LOG_LEVEL
+
+  -s <S>:     Backup the (comma-separated) stanzas in <S>. A regex can be
+              used to match multiple stanzas from the pgbackrest.conf.
+              Default: '$STANZAS'
+EOOPTS
+}
+
+while getopts "hqc:l:s:" opt; do
+    case $opt in
+        h)
+            usage
+            exit 0
+            ;;
+        q)
+            QUIET=1
+            ;;
+        c)
+            PGBACKREST_CONF=$OPTARG
+            ;;
+        l)
+            LOG_LEVEL=$OPTARG
+            ;;
+        s)
+            STANZAS=$OPTARG
+            ;;
+        *)
+            echo "Invalid option: -$OPTARG" >&2
+            exit 1
+        ;;
+    esac
+done
+
+shift "$((OPTIND - 1))"
+
+BACKUP_TYPE=$1
+
+if [ -z "${BACKUP_TYPE}" ]; then
+  echo "Missing the backup type" >&2
+  usage
+  exit 1
+fi
+
+if ! echo $BACKUP_TYPE | grep -Eq 'full|diff|incr'; then
+  echo "The backup type must be one of full, diff or incr. Got: '$BACKUP_TYPE'" >&2
+  usage
+  exit 1
+fi
+
+shift 1
+
+set -e
+
+ALL_STANZA_MATCHES=""
+
+# Separate (by whitespace) and quote each entry to make the loop
+# cleaner.
+STANZAS_QUOTED=$(echo "${STANZAS}" | awk -F',' '{for (i=1; i<=NF; i++){print "\"" $i "\" " }}')
+
+for stanza in $STANZAS_QUOTED; do
+    # Re-remove the quotes with the eval
+    S=$(eval "echo $stanza")
+    STANZA_MATCHES=$(grep -E "\\[$S\\]" $PGBACKREST_CONF |grep -v "\\[global\\(:[^\\]]\\+\\)\\?\\]" | sed 's/\[\([^]]\+\)\]/\1/g')
+    ALL_STANZA_MATCHES="$ALL_STANZA_MATCHES $STANZA_MATCHES"
+done
+
+ALL_STANZA_MATCHES=$(echo $ALL_STANZA_MATCHES | sed 's/\s\+//')
+
+if [ -z "${ALL_STANZA_MATCHES}" ]; then
+    [ $QUIET -ne 1 ] && echo "WARNING: No stanzas matched" >&2
+    exit 0
+fi
+
+for stanza in $ALL_STANZA_MATCHES; do
+    pgbackrest --config=$PGBACKREST_CONF --stanza=$stanza \
+        --type=${BACKUP_TYPE} \
+        --log-level-console=$LOG_LEVEL backup
+done
+
+# vim: ts=4 sw=4 expandtab

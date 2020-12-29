@@ -1,0 +1,20 @@
+---
+# handlers file for ansible-role-pgbackrest
+- name: Reload the postgresql process
+  service:
+    name: postgresql
+    state: reloaded
+  listen: reload postgresql
+
+- name: Restart the postgresql process
+  service:
+    name: postgresql
+    state: restarted
+  listen: restart postgresql
+
+- name: Systemd daemon-reload
+  systemd:
+    daemon_reload: true
+  listen: systemctl daemon-reload
+  when:
+    - "ansible_service_mgr == 'systemd'"

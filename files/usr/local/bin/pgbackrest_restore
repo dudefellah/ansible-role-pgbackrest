@@ -1,0 +1,54 @@
+#!/bin/sh
+
+LOG_LEVEL=${LOG_LEVEL-info}
+STANZA=${STANZA-''}
+PGBACKREST_CONF=${PGBACKREST_CONF-/etc/pgbackrest/pgbackrest.conf}
+
+usage() {
+        cat >&2 <<EOOPTS
+$(basename $0) [OPTIONS] <stanza_name>
+
+stanza_name: Name of the pgbackrest stanza to restore
+
+OPTIONS:
+  -h:         Print this help message
+
+  -l <L>:     Set the log level to <L>
+              Default: $LOG_LEVEL
+EOOPTS
+}
+
+while getopts "hl:" opt; do
+    case $opt in
+        h)
+                usage
+                exit 0
+                ;;
+        l)
+                LOG_LEVEL=$OPTARG
+                ;;
+        *)
+            echo "Invalid option: -$OPTARG" >&2
+            exit 1
+        ;;
+    esac
+done
+
+shift "$((OPTIND - 1))"
+
+STANZA=$1
+
+if [ -z "${STANZA}" ]; then
+  echo "Missing the stanza name" >&2
+  usage
+  exit 1
+fi
+
+shift 1
+
+set -e
+
+pgbackrest --config=$PGBACKREST_CONF --stanza=$STANZA --delta \
+    --log-level-console=$LOG_LEVEL restore
+
+# vim: ts=4 sw=4 expandtab

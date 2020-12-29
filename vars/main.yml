@@ -1,0 +1,21 @@
+---
+# vars file for ansible-role-pgbackrest
+_pgbackrest_packages:
+  centos:
+    - pgbackrest
+  debian:
+    - pgbackrest
+
+_pgbackrest_postgresql_rhel_repo_package:
+  centos:
+    7: "https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm"
+    8: "https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm"
+
+_pgbackrest_postgresql_rhel_repo_rpm_key:
+  centos: "https://download.postgresql.org/pub/repos/yum/RPM-GPG-KEY-PGDG"
+
+_pgbackrest_postgresql_conf_path:
+  centos: "/var/lib/pgsql/data/postgresql.conf"
+  debian:
+    9: "/etc/postgresql/9.6/main/postgresql.conf"
+    10: "/etc/postgresql/11/main/postgresql.conf"

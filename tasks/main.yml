@@ -1,0 +1,148 @@
+---
+# tasks file for ansible-role-pgbackrest
+- name: Load platform variables
+  ansible.builtin.include_vars:
+    file: "{{ lookup('first_found', vars_files, errors='ignore') }}"
+  vars:
+    vars_files:
+      files:
+        - "{{ role_path }}/vars/{{ ansible_distribution | lower }}/\
+           {{ ansible_distribution_major_version }}.yml"
+        - "{{ role_path }}/vars/{{ ansible_distribution | lower }}/main.yml"
+        - "{{ role_path }}/vars/{{ ansible_os_family | lower }}/main.yml"
+        - "{{ role_path }}/vars/main.yml"
+
+- name: Set up role-specific facts based on some inputs and the OS distribution
+  include_tasks:
+    file: role_facts.yml
+
+- name: Load platform dependencies
+  include_tasks:
+    file: "{{ tasks_filename }}"
+  vars:
+    tasks_files:
+      - "{{ role_path }}/tasks/dependencies/\
+        {{ ansible_distribution | lower }}/\
+        {{ ansible_distribution_major_version }}.yml"
+      - "{{ role_path }}/tasks/dependencies/\
+        {{ ansible_distribution | lower }}/\
+        main.yml"
+      - "{{ role_path }}/tasks/dependencies/\
+        {{ ansible_os_family | lower }}.yml"
+      - "{{ role_path }}/tasks/dependencies/main.yml"
+  loop: "{{ query('first_found', tasks_files, errors='ignore') }}"
+  loop_control:
+    loop_var: tasks_filename
+
+- name: Create the pgbackrest repository
+  file:
+    path: "{{ pgbackrest_repo_path }}"
+    mode: "0750"
+    owner: "{{ pgbackrest_owner }}"
+    group: "{{ pgbackrest_group }}"
+    state: directory
+
+- name: Create the pgbackrest config destination path
+  file:
+    path: "{{ pgbackrest_conf_path | dirname }}"
+    state: directory
+    owner: "{{ pgbackrest_owner }}"
+    group: "{{ pgbackrest_group }}"
+    mode: "{{ pgbackrest_conf_dir_mode | default('0755') }}"
+
+- name: Place the pgbackrest config file
+  template:
+    src: etc/pgbackrest/pgbackrest.conf.j2
+    dest: "{{ pgbackrest_conf_path }}"
+    owner: "{{ pgbackrest_owner }}"
+    group: "{{ pgbackrest_group }}"
+    mode: "{{ pgbackrest_conf_mode }}"
+
+- block:
+    - name: Update the postgresql conf file
+      ansible.builtin.blockinfile:
+        path: "{{ __pgbackrest_postgresql_conf_path }}"
+        marker: "{{ pgbackrest_postgresql_conf_marker }}"
+        marker_begin: "{{ pgbackrest_postgresql_conf_marker_begin | default(omit) }}"
+        marker_end: "{{ pgbackrest_postgresql_conf_marker_end | default(omit) }}"
+        state: present
+        block: |-
+          {% for key in [
+             'archive_command',
+             'archive_mode',
+             'listen_addresses',
+             'log_line_prefix',
+             'max_wal_senders',
+             'wal_level'
+          ] %}
+          {% if (
+            (key in pgbackrest_postgresql_conf) and
+            (pgbackrest_postgresql_conf[key] is not none)
+          ) %}
+          {{ key }} = {{ pgbackrest_postgresql_conf[key] | quote }}
+          {% endif %}
+          {% endfor %}
+          {% for key in [
+            'log_filename'
+          ] %}
+          {% if (
+            (key in pgbackrest_postgresql_conf) and
+            (pgbackrest_postgresql_conf[key] is not none)
+          ) %}
+          {{ key }} = '{{ pgbackrest_postgresql_conf[key] }}'
+          {% endif %}
+          {% endfor %}
+      notify: restart postgresql
+      when:
+        - "pgbackrest_postgresql_conf"
+        - "__pgbackrest_postgresql_conf_path is not none"
+
+    - name: Remove custom options if the postgres config options dict is empty
+      ansible.builtin.blockinfile:
+        path: "{{ __pgbackrest_postgresql_conf_path }}"
+        marker: "{{ pgbackrest_postgresql_conf_marker }}"
+        marker_begin: "{{ pgbackrest_postgresql_conf_marker_begin | default(omit) }}"
+        marker_end: "{{ pgbackrest_postgresql_conf_marker_end | default(omit) }}"
+        state: absent
+      when:
+        - "not pgbackrest_postgresql_conf"
+        - "__pgbackrest_postgresql_conf_path is not none"
+
+    - meta: flush_handlers
+
+- include_tasks: stanza.yml
+  vars:
+    stanza_name: "{{ stanza.key }}"
+  loop: "{{ pgbackrest_conf_cluster_stanzas | dict2items }}"
+  loop_control:
+    loop_var: stanza
+
+- name: Install the convenience backup script
+  copy:
+    src: usr/local/bin/pgbackrest_backup
+    dest: "{{ pgbackrest_backup_script_path }}"
+    owner: root
+    group: root
+    mode: "0755"
+  when:
+    - "pgbackrest_backup_script_path is not none"
+
+- name: Install the convenience restoration script
+  copy:
+    src: usr/local/bin/pgbackrest_restore
+    dest: "{{ pgbackrest_restore_script_path }}"
+    owner: root
+    group: root
+    mode: "0755"
+  when:
+    - "pgbackrest_restore_script_path is not none"
+
+- name: Install default file for scheduling
+  template:
+    src: etc/default/pgbackrest-backup.j2
+    dest: /etc/default/pgbackrest-backup
+    owner: root
+    group: root
+    mode: "0644"
+
+- include_tasks: schedule.yml

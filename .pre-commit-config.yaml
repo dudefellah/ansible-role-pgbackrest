@@ -1,0 +1,31 @@
+---
+repos:
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: "v3.2.0"
+  hooks:
+    - id: check-added-large-files
+    - id: check-json
+    - id: check-merge-conflict
+    - id: check-symlinks
+    - id: check-yaml
+    - id: detect-private-key
+    - id: end-of-file-fixer
+    - id: mixed-line-ending
+    - id: trailing-whitespace
+
+- repo: https://github.com/ansible/ansible-lint.git
+  rev: v4.3.5
+  hooks:
+    - id: ansible-lint
+      files: \.(yaml|yml)$
+      args: [
+        "--exclude=molecule/resources",
+        "--exclude=roles",
+        "--exclude=.gitlab-ci.yml",
+        "."
+      ]
+
+- repo: https://gitlab.com/devopshq/gitlab-ci-linter
+  rev: v1.0.1
+  hooks:
+    - id: gitlab-ci-linter

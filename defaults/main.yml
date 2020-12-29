@@ -1,0 +1,146 @@
+---
+# defaults file for ansible-role-pgbackrest
+#
+# You can set the list of packages to be installed by this role. If left null,
+# this role will determine what it thinks is best for your platform. If set
+# to an empty list ([]), no extra packages will be installed.
+pgbackrest_packages: null
+
+# The path on the local filesystem to store the pgbackrest repository.
+pgbackrest_repo_path: /var/lib/pgbackrest
+
+# Owner/User and group for processes and paths created by this role.
+pgbackrest_owner: postgres
+pgbackrest_group: postgres
+
+# By default, this role will try to do a first backup on newly configured
+# stanzas as a test to ensure that everything is configured properly. Set this
+# to false to avoid doing this initial backup.
+pgbackrest_initial_backup: true
+
+# This is the path to the pgbackrest conf file
+pgbackrest_conf_path: /etc/pgbackrest/pgbackrest.conf
+
+# Permissions on the pgbackrest conf file can be set here
+pgbackrest_conf_mode: "0644"
+
+# In case you're interested in changing the permissiosn on the path owning the
+# pgbackrest conf file, you can set that here.
+pgbackrest_conf_dir_mode: "0755"
+
+# pgbackrest stanza configs go in here. The key for each entry is a stanza
+# name, and the contents will be added as key=value entries in the actual
+# config file under the [stanza_name] section(s)
+pgbackrest_conf_cluster_stanzas: {}
+
+# Sets the log level for pgbackrest
+pgbackrest_log_level: info
+
+# repo1-retention-full option for pgbackrest in the [global] section:
+pgbackrest_repo_retention_full: 1
+
+# Client-side encryption options for the pgbackrest [global] section:
+# repo1-cipher-pass=
+pgbackrest_repo_cipher_pass: null
+# repo1-cipher-type=
+pgbackrest_repo_cipher_type: null
+
+# This is a convenience script included in this role for restoring from
+# backups. You can set this to null to avoid having it installed.
+pgbackrest_restore_script_path: /usr/local/bin/pgbackrest_restore
+
+# This is a convenience script included in this role for making backups
+# with pgbackrest. It mainly simplifies passing multiple stanzas for backup,
+# and is used by the scheduled systemd or cron jobs, so disabling the
+# installation of this file by setting `pgbackrest_backup_script_path` to
+# null should only happen when you're also not using the timer/cron jobs
+# that come with this role.
+pgbackrest_backup_script_path: /usr/local/bin/pgbackrest_backup
+
+# Set the stanzas to be backed up automatically (with the cron or systemd timer
+# jobs) here. A list of regular expressions can be used here.
+pgbackrest_backup_stanzas:
+  - ".*"
+
+# Cron schedule for pgbackrest full backup jobs. Default is 1am every Sunday.
+pgbackrest_full_cron_schedule: "0 1 * * 0"
+
+# Cron schedule for pgbackrest differential backup jobs.
+# Default is to not run in favour of doing incremental backups. Set this to
+# a valid cron schedule to enabled it.
+pgbackrest_diff_cron_schedule: null
+
+# Cron schedule for pgbackrest incremental backup jobs.
+# Defaults to every day other than Sunday at 1am.
+pgbackrest_incr_cron_schedule: "0 1 * * 1-6"
+
+# Enable/disable cron scheduling. Disabled by default in favour of
+# using a systemd .timer instead (see below)
+pgbackrest_cron_enabled: false
+
+# Systemd timer OnCalendar value for full backups. Default is 1am every Sunday.
+pgbackrest_full_backup_systemd_timer_oncalendar: "Sun *-*-* 1:00:00"
+
+# Systemd timer OnCalendar value for differential backups. Default is to
+# use incremental backups instead of differential backups. Set this value
+# to a valid OnCalendar value and set the
+# `pgbackrest_incr_backup_systemd_timer_oncalendar` value to null to use
+# differential backups instead.
+pgbackrest_diff_backup_systemd_timer_oncalendar: null
+
+# Systemd timer OnCalendar value for incremental backups. Default is 1am every
+# day other than Sunday.
+pgbackrest_incr_backup_systemd_timer_oncalendar: "Mon-Sat *-*-* 1:00:00"
+
+# Enable/disable systemd timer. Disable the systemd timer in case you want
+# to use a cron job instead
+pgbackrest_systemd_timer_enabled: true
+
+# Optionally give a name to the pgbackrest timer job.
+pgbackrest_systemd_timer_name: pgbackrest-backup
+
+# This package gets installed on RHEL hosts to gain access to the pgbackrest
+# package. If you already have an appropriate repository, or you're not
+# planning on fetching any packages (maybe pgbackrest is already installed?)
+# then set this value to an empty string (""). A null-value indicates that
+# the appropriate package for your release will be detected and used.
+# eg.
+# https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm for EL7
+# https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm for EL8
+pgbackrest_postgresql_rhel_repo_package: null
+
+# URL to the RPM GPG key for the RHEL packages
+# If null, this will be automatically determined by this role
+pgbackrest_postgresql_rhel_repo_rpm_key: null
+
+# This value specifies the path to the installed postgresql.conf filename
+# if you want to edit its values to enable archiving for pgBackRest.
+pgbackrest_postgresql_conf_path: null
+
+# The values in this dict will be placed inside of the postgresql.conf
+# file, potentially overriding any existing values. If you change this
+# mapping to not include any of the provided key values, those values
+# will not be modified in the postgresql.conf file.
+# Only the keys 'archive_command', 'archive_mode', 'listen_addresses',
+# 'log_filename', 'log_line_prefix', 'max_wal_senders', and 'wal_level'
+# will be applied.
+pgbackrest_postgresql_conf:
+  archive_command: "pgbackrest --config={{ pgbackrest_conf_path }} --stanza=main archive-push %p"
+  archive_mode: "on"
+  listen_addresses: "*"
+  log_filename: "postgresql.log"
+  log_line_prefix: ""
+  max_wal_senders: 3
+  wal_level: archive
+
+# This is the ansible.builtin.blockinfile marker. You can customize this here,
+# but it should already be unique, so chance of collisions should be pretty
+# low.
+pgbackrest_postgresql_conf_marker: >-
+  # {mark} dudefellah.pgbackrest - ANSIBLE MANAGED BLOCK
+
+# The 'begin' and 'end' markers for ansible.buildin.blockinfile (to be inserted
+# in place of {mark} in the marker). Probably doesn't need editing, but you
+# can change it here if you need/want to)
+pgbackrest_postgresql_conf_marker_begin: "BEGIN"
+pgbackrest_postgresql_conf_marker_end: "END"

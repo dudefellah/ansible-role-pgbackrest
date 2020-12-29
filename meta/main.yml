@@ -1,0 +1,31 @@
+---
+galaxy_info:
+  role_name: pgbackrest
+  author: Dan Thomson
+  description: Install and configure pgbackrest
+
+  issue_tracker_url: https://github.com/dudefellah/ansible-role-pgbackrest/issues
+
+  license: GPL-2.0-or-later
+
+  min_ansible_version: 2.9
+
+  platforms:
+    - name: EL
+      versions:
+        - 7
+        - 8
+    - name: Debian
+      versions:
+        - stretch
+        - buster
+
+  galaxy_tags:
+    - backup
+    - centos
+    - database
+    - pgbackrest
+    - postgres
+    - restore
+
+dependencies: []

@@ -1,0 +1,5 @@
+---
+- name: Install dependency packages
+  package:
+    name: "{{ __pgbackrest_packages }}"
+    state: present
