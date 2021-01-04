@@ -1,4 +1,18 @@
 ---
+- name: Disable timers if the systemd timer is disabled
+  systemd:
+    name: "{{ _systemd_timer }}"
+    enabled: false
+  loop:
+    - "{{ pgbackrest_systemd_timer_name }}-full.timer"
+    - "{{ pgbackrest_systemd_timer_name }}-diff.timer"
+    - "{{ pgbackrest_systemd_timer_name }}-incr.timer"
+  loop_control:
+    loop_var: _systemd_timer
+  when:
+    - "ansible_service_mgr == 'systemd'"
+    - "not pgbackrest_systemd_timer_enabled"
+
 - name: >-
     Remove systemd .service and .timer files if the systemd timer is disbabled
   file:
