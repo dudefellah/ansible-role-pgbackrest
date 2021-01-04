@@ -4,7 +4,8 @@
   file:
     path: "{{ _pgbackrest_systemd_file }}"
     state: absent
-  notify: systemctl daemon-reload
+  notify:
+    - systemctl daemon-reload
   loop:
     - "/etc/systemd/system/{{ pgbackrest_systemd_timer_name }}-full.service"
     - "/etc/systemd/system/{{ pgbackrest_systemd_timer_name }}-full.timer"
@@ -21,7 +22,8 @@
   file:
     path: "{{ _pgbackrest_systemd_file }}"
     state: absent
-  notify: systemctl daemon-reload
+  notify:
+    - systemctl daemon-reload
   loop:
     - "/etc/systemd/system/{{ pgbackrest_systemd_timer_name }}-diff.service"
     - "/etc/systemd/system/{{ pgbackrest_systemd_timer_name }}-diff.timer"
@@ -39,7 +41,8 @@
   file:
     path: "{{ _pgbackrest_systemd_file }}"
     state: absent
-  notify: systemctl daemon-reload
+  notify:
+    - systemctl daemon-reload
   loop:
     - "/etc/systemd/system/{{ pgbackrest_systemd_timer_name }}-incr.service"
     - "/etc/systemd/system/{{ pgbackrest_systemd_timer_name }}-incr.timer"
@@ -58,7 +61,8 @@
     owner: root
     group: root
     mode: "0644"
-  notify: systemctl daemon-reload
+  notify:
+    - systemctl daemon-reload
   vars:
     pgbackrest_systemd_timer_oncalendar: "{{ pgbackrest_full_backup_systemd_timer_oncalendar }}"
     _pgbackrest_backup_type: full
@@ -73,7 +77,9 @@
     owner: root
     group: root
     mode: "0644"
-  notify: systemctl daemon-reload
+  notify:
+    - systemctl daemon-reload
+    - systemctl enable pgbackrest-backup-full.timer
   vars:
     pgbackrest_systemd_timer_oncalendar: "{{ pgbackrest_full_backup_systemd_timer_oncalendar }}"
   when:
@@ -87,7 +93,8 @@
     owner: root
     group: root
     mode: "0644"
-  notify: systemctl daemon-reload
+  notify:
+    - systemctl daemon-reload
   vars:
     pgbackrest_systemd_timer_oncalendar: >-
       {{ pgbackrest_diff_backup_systemd_timer_oncalendar }}
@@ -104,7 +111,9 @@
     owner: root
     group: root
     mode: "0644"
-  notify: systemctl daemon-reload
+  notify:
+    - systemctl daemon-reload
+    - systemctl enable pgbackrest-backup-diff.timer
   vars:
     pgbackrest_systemd_timer_oncalendar: >-
       {{ pgbackrest_diff_backup_systemd_timer_oncalendar }}
@@ -120,7 +129,8 @@
     owner: root
     group: root
     mode: "0644"
-  notify: systemctl daemon-reload
+  notify:
+    - systemctl daemon-reload
   vars:
     pgbackrest_systemd_timer_oncalendar: >-
       {{ pgbackrest_incr_backup_systemd_timer_oncalendar }}
@@ -137,7 +147,9 @@
     owner: root
     group: root
     mode: "0644"
-  notify: systemctl daemon-reload
+  notify:
+    - systemctl daemon-reload
+    - systemctl enable pgbackrest-backup-incr.timer
   vars:
     pgbackrest_systemd_timer_oncalendar: >-
       {{ pgbackrest_incr_backup_systemd_timer_oncalendar }}
@@ -148,7 +160,7 @@
 
 - name: Install the pgbackrest full backup cron job
   ansible.builtin.cron:
-    name: "pgbackrest backup schedule"
+    name: "pgbackrest full backup schedule"
     cron_file: pgbackrest
     job: >-
       {{ pgbackrest_backup_script_path }}
@@ -175,7 +187,7 @@
 
 - name: Install the pgbackrest differential backup cron job
   ansible.builtin.cron:
-    name: "pgbackrest backup schedule"
+    name: "pgbackrest diff backup schedule"
     cron_file: pgbackrest
     job: >-
       {{ pgbackrest_backup_script_path }}
@@ -205,7 +217,7 @@
 
 - name: Install the pgbackrest incremental backup cron job
   ansible.builtin.cron:
-    name: "pgbackrest backup schedule"
+    name: "pgbackrest incremental backup schedule"
     cron_file: pgbackrest
     job: >-
       {{ pgbackrest_backup_script_path }}
