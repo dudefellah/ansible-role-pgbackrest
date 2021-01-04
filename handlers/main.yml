@@ -18,3 +18,27 @@
   listen: systemctl daemon-reload
   when:
     - "ansible_service_mgr == 'systemd'"
+
+- name: Enable full backup timer
+  systemd:
+    name: "{{ pgbackrest_systemd_timer_name }}-full.timer"
+    enabled: true
+  listen: systemctl enable pgbackrest-backup-full.timer
+  when:
+    - "ansible_service_mgr == 'systemd'"
+
+- name: Enable differential backup timer
+  systemd:
+    name: "{{ pgbackrest_systemd_timer_name }}-diff.timer"
+    enabled: true
+  listen: systemctl enable pgbackrest-backup-diff.timer
+  when:
+    - "ansible_service_mgr == 'systemd'"
+
+- name: Enable incremental backup timer
+  systemd:
+    name: "{{ pgbackrest_systemd_timer_name }}-incr.timer"
+    enabled: true
+  listen: systemctl enable pgbackrest-backup-incr.timer
+  when:
+    - "ansible_service_mgr == 'systemd'"
