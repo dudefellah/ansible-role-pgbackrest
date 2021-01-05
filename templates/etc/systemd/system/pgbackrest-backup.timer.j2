@@ -4,6 +4,7 @@ Description=PgBackRest Backup Job
 [Timer]
 OnCalendar={{ pgbackrest_systemd_timer_oncalendar }}
 Persistent=true
+Unit={{ pgbackrest_systemd_timer_unit }}
 
 [Install]
 WantedBy=timers.target
