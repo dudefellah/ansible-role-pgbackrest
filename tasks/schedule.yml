@@ -165,7 +165,7 @@
   vars:
     pgbackrest_systemd_timer_oncalendar: >-
       {{ pgbackrest_incr_backup_systemd_timer_oncalendar }}
-    pgbackrest_systemd_timer_unit: "{{ pgbackrest_systemd_timer_name }}-diff.service"
+    pgbackrest_systemd_timer_unit: "{{ pgbackrest_systemd_timer_name }}-incr.service"
   when:
     - "ansible_service_mgr == 'systemd'"
     - "pgbackrest_systemd_timer_enabled"
