@@ -1,13 +1,28 @@
 {% for (stanza_name, cluster) in pgbackrest_conf_cluster_stanzas.items() %}
+{% if stanza_name != 'global' %}
 [{{ stanza_name }}]
-{% if 'pg_path' in cluster %}
-pg1-path={{ cluster.pg_path }}
+{% for op_key in cluster %}
+{% if cluster[op_key] is sameas true %}
+{{ op_key }}=y
+{% elif cluster[op_key] is sameas false %}
+{{ op_key }}=n
+{% else %}
+{{ op_key }}={{ cluster[op_key] }}
 {% endif %}
-{% if ('db_path' in cluster) and (not 'pg_path' in cluster) %}
-db-path={{ cluster.db_path }}
+{% endfor %}
 {% endif %}
 {% endfor %}
 
 [global]
 repo1-path={{ pgbackrest_repo_path }}
 repo1-retention-full={{ pgbackrest_repo_retention_full }}
+
+{% for (op_key, op_val) in (pgbackrest_conf_cluster_stanzas['global'] | default({})).items() %}
+{% if op_val is sameas true %}
+{{ op_key }}=y
+{% elif op_val is sameas false %}
+{{ op_key }}=n
+{% else %}
+{{ op_key }}={{ op_val }}
+{% endif %}
+{% endfor %}
