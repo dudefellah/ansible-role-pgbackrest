@@ -1,21 +1,35 @@
 ---
 # vars file for ansible-role-pgbackrest
-_pgbackrest_packages:
-  centos:
-    - pgbackrest
-  debian:
-    - pgbackrest
+__pgbackrest_packages:
+  CentOS:
+    default:
+      - pgbackrest
+  Debian:
+    default:
+      - pgbackrest
 
-_pgbackrest_postgresql_rhel_repo_package:
-  centos:
+__pgbackrest_postgresql_rhel_repo_package:
+  CentOS:
     7: "https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm"
     8: "https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm"
 
-_pgbackrest_postgresql_rhel_repo_rpm_key:
-  centos: "https://download.postgresql.org/pub/repos/yum/RPM-GPG-KEY-PGDG"
+__pgbackrest_postgresql_rhel_repo_rpm_key:
+  CentOS:
+    default: "https://download.postgresql.org/pub/repos/yum/RPM-GPG-KEY-PGDG"
 
-_pgbackrest_postgresql_conf_path:
-  centos: "/var/lib/pgsql/data/postgresql.conf"
-  debian:
+__pgbackrest_postgresql_conf_path:
+  CentOS:
+    default: "/var/lib/pgsql/data/postgresql.conf"
+  Debian:
     9: "/etc/postgresql/9.6/main/postgresql.conf"
     10: "/etc/postgresql/11/main/postgresql.conf"
+    11: "/etc/postgresql/13/main/postgresql.conf"
+
+# Default values to be merged with the values provided externally.
+# We merge this in to maintain at least a repo1-path an repo-retention-path
+# in the global section, even if someone overrides the whole
+# `pgbackrest_conf_cluster` value.
+__pgbackrest_conf_cluster_stanzas:
+  global:
+    repo1-path: /var/lib/pgbackrest
+    repo1-retention-full: 1

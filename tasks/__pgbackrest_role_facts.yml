@@ -1,0 +1,110 @@
+---
+# yamllint disable rule:line-length
+- name: Get the list of dependency packages
+  ansible.builtin.set_fact:
+    _pgbackrest_packages: >-
+      {%- if pgbackrest_packages is not none -%}
+      {{ pgbackrest_packages }}
+      {%- elif (
+        (ansible_distribution in __pgbackrest_packages)
+        and (ansible_distribution_major_version | int in __pgbackrest_packages[ansible_distribution])
+      ) -%}
+      {{ __pgbackrest_packages[ansible_distribution][ansible_distribution_major_version|int] }}
+      {%- elif (
+        (ansible_distribution in __pgbackrest_packages)
+        and ('default' in __pgbackrest_packages[ansible_distribution])
+      ) -%}
+      {{ __pgbackrest_packages[ansible_distribution]['default'] }}
+      {%- endif -%}
+  tags:
+    - pgbackrest
+
+- name: Set the RHEL package
+  ansible.builtin.set_fact:
+    _pgbackrest_postgresql_rhel_repo_package: >-
+      {%- if pgbackrest_postgresql_rhel_repo_package is not none -%}
+      {{ pgbackrest_postgresql_rhel_repo_package }}
+      {%- elif (
+        (ansible_distribution in __pgbackrest_postgresql_rhel_repo_package)
+        and (ansible_distribution_major_version | int in __pgbackrest_postgresql_rhel_repo_package[ansible_distribution])
+      ) -%}
+      {{ __pgbackrest_postgresql_rhel_repo_package[ansible_distribution][ansible_distribution_major_version|int] }}
+      {%- elif (
+        (ansible_distribution in __pgbackrest_postgresql_rhel_repo_package)
+        and ('default' in __pgbackrest_postgresql_rhel_repo_package[ansible_distribution])
+      ) -%}
+      {{ __pgbackrest_postgresql_rhel_repo_package[ansible_distribution]['default'] }}
+      {%- endif -%}
+  when:
+    - "ansible_os_family == 'RedHat'"
+  tags:
+    - pgbackrest
+
+- name: Set the RPM repo key
+  ansible.builtin.set_fact:
+    _pgbackrest_postgresql_rhel_repo_rpm_key: >-
+      {%- if pgbackrest_postgresql_rhel_repo_rpm_key is not none -%}
+      {{ pgbackrest_postgresql_rhel_repo_rpm_key }}
+      {%- elif (
+        (ansible_distribution in __pgbackrest_postgresql_rhel_repo_rpm_key)
+        and (ansible_distribution_major_version | int in __pgbackrest_postgresql_rhel_repo_rpm_key[ansible_distribution])
+      ) -%}
+      {{ __pgbackrest_postgresql_rhel_repo_rpm_key[ansible_distribution][ansible_distribution_major_version|int] }}
+      {%- elif (
+        (ansible_distribution in __pgbackrest_postgresql_rhel_repo_rpm_key)
+        and ('default' in __pgbackrest_postgresql_rhel_repo_rpm_key[ansible_distribution])
+      ) -%}
+      {{ __pgbackrest_postgresql_rhel_repo_rpm_key[ansible_distribution]['default'] }}
+      {%- endif -%}
+  tags:
+    - pgbackrest
+
+- name: Set the appropriate postgresql config location
+  ansible.builtin.set_fact:
+    _pgbackrest_postgresql_conf_path: >-
+      {%- if pgbackrest_postgresql_conf_path is not none -%}
+      {{ pgbackrest_postgresql_conf_path }}
+      {%- elif (
+        (ansible_distribution in __pgbackrest_postgresql_conf_path)
+        and (ansible_distribution_major_version | int in __pgbackrest_postgresql_conf_path[ansible_distribution])
+      ) -%}
+      {{ __pgbackrest_postgresql_conf_path[ansible_distribution][ansible_distribution_major_version|int] }}
+      {%- elif (
+        (ansible_distribution in __pgbackrest_postgresql_conf_path)
+        and ('default' in __pgbackrest_postgresql_conf_path[ansible_distribution])
+      ) -%}
+      {{ __pgbackrest_postgresql_conf_path[ansible_distribution]['default'] }}
+      {%- endif -%}
+  tags:
+    - pgbackrest
+
+- name: Create a merge pgbackrest_conf_cluster_stanzas dict
+  ansible.builtin.set_fact:
+    _pgbackrest_conf_cluster_stanzas: >-
+      {{ __pgbackrest_conf_cluster_stanzas
+         | combine(pgbackrest_conf_cluster_stanzas, recursive=True) }}
+  tags:
+    - pgbackrest
+
+# Pull all '^repo.*-path$'-matching values out of a stanza
+- name: Collect the list of pgbackrest repo paths in case they need creation
+  ansible.builtin.set_fact:
+    _pgbackrest_repo_paths: >-
+      {{ (_pgbackrest_repo_paths | default([]))
+         + (
+             _pgbackrest_stanza
+             | dict2items
+             | selectattr('key', 'regex', '^repo.*-path$')
+             | map(attribute='value')
+           ) }}
+  loop: >-
+    {{ _pgbackrest_conf_cluster_stanzas
+       | dict2items
+       | map(attribute='value')
+       | list }}
+  loop_control:
+    loop_var: _pgbackrest_stanza
+  tags:
+    - pgbackrest
+
+# yamllint enable rule:line-length

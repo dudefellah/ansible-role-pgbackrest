@@ -3,56 +3,40 @@ dependency:
   name: galaxy
 driver:
   name: docker
-lint: |
-  set -e
-  yamllint .
-  ansible-lint .
 platforms:
-  - name: pgbackrest-molecule-centos-7-instance
+  - name: pgbackrest-molecule-centos7-instance
     image: "centos:centos7"
-    tmpfs:
-      - /run
-      - /tmp
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-    command: /usr/sbin/init
-  - name: pgbackrest-molecule-centos-8-instance
-    image: "centos:centos8"
-    tmpfs:
-     - /run
-     - /tmp
-    volumes:
-     - /sys/fs/cgroup:/sys/fs/cgroup:ro
-    command: /usr/sbin/init
-  - name: pgbackrest-molecule-debian-buster-instance
+  - name: pgbackrest-molecule-centos8-instance
+    image: quay.io/centos/centos:stream8
+  - name: pgbackrest-molecule-debian11-instance
+    image: python:3-bullseye
+  - name: pgbackrest-molecule-debian10-instance
     image: python:3-buster
-    tmpfs:
-      - /run
-      - /tmp
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-  - name: pgbackrest-molecule-debian-stretch-instance
-    image: python:3-stretch
-    tmpfs:
-      - /run
-      - /tmp
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
 provisioner:
   name: ansible
+  options:
+    tags: pgbackrest,molecule-converge-test
   playbooks:
     prepare: prepare.yml
   inventory:
+    group_vars:
+      all:
+        pgbackrest_owner: postgres
+        pgbackrest_cron_enabled: true
+        pgbackrest_systemd_timer_enabled: false
     host_vars:
-      pgbackrest-molecule-centos-7-instance:
+      pgbackrest-molecule-centos7-instance:
+        pgbackrest_reload_command: "pg_ctl -D /var/lib/pgsql/data restart"
         pgbackrest_conf_cluster_stanzas:
           main:
-            pg_path: /var/lib/pgsql/data
-      pgbackrest-molecule-centos-8-instance:
+            pg1-path: /var/lib/pgsql/data
+      pgbackrest-molecule-centos8-instance:
+        pgbackrest_reload_command: "pg_ctl -D /var/lib/pgsql/data restart"
         pgbackrest_conf_cluster_stanzas:
           main:
-            pg_path: /var/lib/pgsql/data
-      pgbackrest-molecule-debian-stretch-instance:
+            pg1-path: /var/lib/pgsql/data
+      pgbackrest-molecule-debian10-instance:
+        pgbackrest_reload_command: "/usr/bin/pg_ctlcluster 11 main restart"
         pgbackrest_postgresql_conf:
           archive_command: "pgbackrest --config={{ pgbackrest_conf_path }} --stanza=main archive-push %p"
           archive_mode: "on"
@@ -63,11 +47,12 @@ provisioner:
           wal_level: replica
         pgbackrest_conf_cluster_stanzas:
           main:
-            db_path: /var/lib/postgresql/9.6/main
-      pgbackrest-molecule-debian-buster-instance:
+            db-path: /var/lib/postgresql/11/main
+      pgbackrest-molecule-debian11-instance:
+        pgbackrest_reload_command: "/usr/bin/pg_ctlcluster 13 main restart"
         pgbackrest_conf_cluster_stanzas:
           main:
-            pg_path: /var/lib/postgresql/11/main
+            pg1-path: /var/lib/postgresql/13/main
 verifier:
   name: testinfra
   options:

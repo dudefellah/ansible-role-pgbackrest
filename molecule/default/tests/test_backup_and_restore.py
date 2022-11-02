@@ -1,10 +1,6 @@
-import json
-
 import os
 
 import re
-
-import sys
 
 import testinfra.utils.ansible_runner
 
@@ -17,10 +13,11 @@ testinfra_hosts = testinfra.utils.ansible_runner.AnsibleRunner(
 
 def update_service(host, service_name, state):
     if host.system_info.distribution == 'debian':
-        return host.run("/etc/init.d/%s %s",
-                        service_name, state)
+        return host.run("/etc/init.d/%s %s", service_name, state)
 
-    return host.run("systemctl %s %s", state, service_name)
+    with host.sudo("postgres"):
+        return host.run("/usr/bin/pg_ctl -D /var/lib/pgsql/data %s", state)
+
 
 def test_backup_files(host):
     pgbackrest_conf_path = "/etc/pgbackrest/pgbackrest.conf"
@@ -32,6 +29,8 @@ def test_backup_files(host):
             postgresql_data_path = "/var/lib/postgresql/9.6/main"
         elif re.match(r'^10', host.system_info.release):
             postgresql_data_path = "/var/lib/postgresql/11/main"
+        elif re.match(r'^11', host.system_info.release):
+            postgresql_data_path = "/var/lib/postgresql/13/main"
 
     # Check the pgbackrest status
     with host.sudo("postgres"):
@@ -50,7 +49,9 @@ def test_backup_files(host):
     # Add a database and database entry
     with host.sudo("postgres"):
         host.run("createdb test")
-        host.run("psql -c \"CREATE TABLE testtable (id int, name varchar)\" test")
+        host.run(
+            "psql -c \"CREATE TABLE testtable (id int, name varchar)\" test"
+        )
         host.run(
             (
                 "psql -c \"INSERT INTO testtable (id, name) "
@@ -58,7 +59,9 @@ def test_backup_files(host):
             ),
             str(test_uuid),
         )
-        result = host.run("psql -c \"SELECT * FROM testtable LIMIT 1\" -t test")
+        result = host.run(
+            "psql -c \"SELECT * FROM testtable LIMIT 1\" -t test"
+        )
         assert result.exit_status == 0
 
     # Attempt a backup with pgbackrest
@@ -72,10 +75,16 @@ def test_backup_files(host):
         assert backup.exit_status == 0
 
     # Ruin the database and restore
-    rmcmd = host.run("rm -f -- %s/global/pg_control", postgresql_data_path)
+    host.run("rm -f -- %s/global/pg_control", postgresql_data_path)
 
     restart = update_service(host, "postgresql", "restart")
-    assert restart.exit_status != 0
+
+    # CentOS 7 gives 0 result even when the restart fails...
+    if (
+            (host.system_info.distribution != 'centos')
+            and (not re.match(r'^7', host.system_info.release))
+    ):
+        assert restart.exit_status != 0
 
     restore = host.run("/usr/local/bin/pgbackrest_restore main")
     assert restore.exit_status == 0
