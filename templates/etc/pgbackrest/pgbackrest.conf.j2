@@ -1,4 +1,4 @@
-{% for (stanza_name, cluster) in pgbackrest_conf_cluster_stanzas.items() %}
+{% for (stanza_name, cluster) in _pgbackrest_conf_cluster_stanzas.items() %}
 {% if stanza_name != 'global' %}
 [{{ stanza_name }}]
 {% for op_key in cluster %}
@@ -14,10 +14,7 @@
 {% endfor %}
 
 [global]
-repo1-path={{ pgbackrest_repo_path }}
-repo1-retention-full={{ pgbackrest_repo_retention_full }}
-
-{% for (op_key, op_val) in (pgbackrest_conf_cluster_stanzas['global'] | default({})).items() %}
+{% for (op_key, op_val) in (_pgbackrest_conf_cluster_stanzas['global'] | default({})).items() %}
 {% if op_val is sameas true %}
 {{ op_key }}=y
 {% elif op_val is sameas false %}

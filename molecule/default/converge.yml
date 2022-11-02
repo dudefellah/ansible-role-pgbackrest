@@ -1,7 +1,10 @@
 ---
 - name: Converge
   hosts: all
+  gather_facts: true
   tasks:
     - name: "Include ansible-role-pgbackrest"
-      include_role:
-        name: "ansible-role-pgbackrest"
+      ansible.builtin.include_role:
+        name: "dudefellah.pgbackrest"
+      tags:
+        - molecule-converge-test

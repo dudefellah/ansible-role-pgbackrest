@@ -1,6 +1,6 @@
 ---
 - name: Disable timers if the systemd timer is disabled
-  systemd:
+  ansible.builtin.systemd:
     name: "{{ _systemd_timer }}"
     enabled: false
     state: stopped
@@ -13,10 +13,13 @@
   when:
     - "ansible_service_mgr == 'systemd'"
     - "not pgbackrest_systemd_timer_enabled"
+  tags:
+    - molecule-notest
+    - pgbackrest
 
 - name: >-
     Remove systemd .service and .timer files if the systemd timer is disbabled
-  file:
+  ansible.builtin.file:
     path: "{{ _pgbackrest_systemd_file }}"
     state: absent
   notify:
@@ -30,11 +33,14 @@
     - >-
       (ansible_service_mgr != 'systemd') or
       (not pgbackrest_systemd_timer_enabled)
+  tags:
+    - molecule-notest
+    - pgbackrest
 
 - name: >-
     Remove systemd diff .service and .timer files if the systemd timer is
     disbabled or the diff calendar value isn't set
-  file:
+  ansible.builtin.file:
     path: "{{ _pgbackrest_systemd_file }}"
     state: absent
   notify:
@@ -49,11 +55,14 @@
       (ansible_service_mgr != 'systemd') or
       (not pgbackrest_systemd_timer_enabled) or
       (not pgbackrest_diff_backup_systemd_timer_oncalendar)
+  tags:
+    - molecule-notest
+    - pgbackrest
 
 - name: >-
     Remove systemd incr .service and .timer files if the systemd timer is
     disbabled or the diff calendar value isn't set
-  file:
+  ansible.builtin.file:
     path: "{{ _pgbackrest_systemd_file }}"
     state: absent
   notify:
@@ -68,6 +77,9 @@
       (ansible_service_mgr != 'systemd') or
       (not pgbackrest_systemd_timer_enabled) or
       (not pgbackrest_incr_backup_systemd_timer_oncalendar)
+  tags:
+    - molecule-notest
+    - pgbackrest
 
 - name: Install the pgbackrest full backup service
   ansible.builtin.template:
@@ -83,6 +95,9 @@
   when:
     - "ansible_service_mgr == 'systemd'"
     - "pgbackrest_systemd_timer_enabled"
+  tags:
+    - molecule-notest
+    - pgbackrest
 
 - name: Install the pgbackrest full backup timer
   ansible.builtin.template:
@@ -100,6 +115,9 @@
   when:
     - "ansible_service_mgr == 'systemd'"
     - "pgbackrest_systemd_timer_enabled"
+  tags:
+    - molecule-notest
+    - pgbackrest
 
 - name: Install the pgbackrest differential backup service
   ansible.builtin.template:
@@ -116,6 +134,9 @@
     - "ansible_service_mgr == 'systemd'"
     - "pgbackrest_systemd_timer_enabled"
     - "pgbackrest_diff_backup_systemd_timer_oncalendar is not none"
+  tags:
+    - molecule-notest
+    - pgbackrest
 
 - name: Install the pgbackrest differential backup timer
   ansible.builtin.template:
@@ -135,6 +156,9 @@
     - "ansible_service_mgr == 'systemd'"
     - "pgbackrest_systemd_timer_enabled"
     - "pgbackrest_diff_backup_systemd_timer_oncalendar is not none"
+  tags:
+    - molecule-notest
+    - pgbackrest
 
 - name: Install the pgbackrest incremental backup service
   ansible.builtin.template:
@@ -151,6 +175,9 @@
     - "ansible_service_mgr == 'systemd'"
     - "pgbackrest_systemd_timer_enabled"
     - "pgbackrest_incr_backup_systemd_timer_oncalendar is not none"
+  tags:
+    - molecule-notest
+    - pgbackrest
 
 - name: Install the pgbackrest incremental backup timer
   ansible.builtin.template:
@@ -170,6 +197,9 @@
     - "ansible_service_mgr == 'systemd'"
     - "pgbackrest_systemd_timer_enabled"
     - "pgbackrest_incr_backup_systemd_timer_oncalendar is not none"
+  tags:
+    - molecule-notest
+    - pgbackrest
 
 - name: Install the pgbackrest full backup cron job
   ansible.builtin.cron:

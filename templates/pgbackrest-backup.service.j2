@@ -1,0 +1,8 @@
+[Unit]
+Description=Perform a Postgres database backup with PgBackRest
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/default/pgbackrest-backup
+ExecStart={{ pgbackrest_backup_script_path }} -s "$PGBACKREST_BACKUP_STANZAS" {{ _pgbackrest_backup_type }}
+SyslogIdentifier=pgbackrest

@@ -1,56 +1,98 @@
 ---
-- name: Converge
+- name: Prepare
   hosts: all
+  gather_facts: true
   tasks:
     - name: Install some dependencies for the role tests
-      package:
+      ansible.builtin.package:
         name:
           - sudo
         update_cache: true
         state: present
+      tags:
+        - molecule-converge-test
 
-    - name: Install epel on CentOS
-      package:
+    - name: Install EPEL on CentOS
+      ansible.builtin.package:
         name:
           - epel-release
-        state: present
+          - ca-certificates
+        state: latest
       when:
         - "ansible_distribution in ['CentOS']"
+      tags:
+        - molecule-converge-test
 
     - name: Install postgres
-      package:
+      ansible.builtin.package:
         name:
           - postgresql-server
         state: present
       when:
         - "ansible_distribution in ['CentOS']"
+      tags:
+        - molecule-converge-test
 
     - name: Init postgres DB (CentOS)
-      command: "postgresql-setup initdb"
+      ansible.builtin.command: >-
+        /usr/bin/initdb --pgdata="/var/lib/pgsql/data" --auth=ident
       when:
         - "ansible_distribution in ['CentOS']"
       become: true
-      become_user: postgres
+      become_user: "{{ pgbackrest_owner }}"
+      tags:
+        - molecule-converge-test
 
     - name: Install postgres
-      package:
-        name:
-          - postgresql-9.6
-        state: present
-      when:
-        - "ansible_distribution in ['Debian']"
-        - "ansible_distribution_major_version|int == 9"
-
-    - name: Install postgres
-      package:
+      ansible.builtin.package:
         name:
           - postgresql-11
         state: present
       when:
         - "ansible_distribution in ['Debian']"
         - "ansible_distribution_major_version|int == 10"
+      tags:
+        - molecule-converge-test
 
-    - name: Start postgresql
-      service:
-        name: postgresql
-        state: started
+    - name: Install postgres
+      ansible.builtin.package:
+        name:
+          - postgresql-13
+        state: present
+      when:
+        - "ansible_distribution in ['Debian']"
+        - "ansible_distribution_major_version|int == 11"
+      tags:
+        - molecule-converge-test
+
+    - name: Start postgresql (CentOS)
+      ansible.builtin.shell: >-
+        /usr/bin/postmaster -D /var/lib/pgsql/data &
+      when:
+        - "ansible_distribution in ['CentOS']"
+      become: true
+      become_user: "{{ pgbackrest_owner }}"
+      tags:
+        - molecule-converge-test
+
+    - name: Start postgresql (Debian Buster)
+      ansible.builtin.shell: >-
+        /usr/bin/pg_ctlcluster 11 main start
+      when:
+        - "ansible_distribution in ['Debian']"
+        - "ansible_distribution_major_version|int == 10"
+      become: true
+      become_user: "{{ pgbackrest_owner }}"
+      tags:
+        - molecule-converge-test
+
+    - name: Start postgresql (Debian Bullseye)
+      ansible.builtin.shell: >-
+        /usr/bin/pg_ctlcluster 13 main start
+      when:
+        - "ansible_distribution in ['Debian']"
+        - "ansible_distribution_major_version|int == 11"
+      become: true
+      become_user: "{{ pgbackrest_owner }}"
+      tags:
+        - molecule-converge-test

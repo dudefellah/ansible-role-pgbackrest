@@ -1,26 +1,14 @@
 ---
 # handlers file for ansible-role-pgbackrest
-- name: Reload the postgresql process
-  service:
-    name: postgresql
-    state: reloaded
-  listen: reload postgresql
-
-- name: Restart the postgresql process
-  service:
-    name: postgresql
-    state: restarted
-  listen: restart postgresql
-
 - name: Systemd daemon-reload
-  systemd:
+  ansible.builtin.systemd:
     daemon_reload: true
   listen: systemctl daemon-reload
   when:
     - "ansible_service_mgr == 'systemd'"
 
 - name: Enable full backup timer
-  systemd:
+  ansible.builtin.systemd:
     name: "{{ pgbackrest_systemd_timer_name }}-full.timer"
     enabled: true
     state: started
@@ -29,7 +17,7 @@
     - "ansible_service_mgr == 'systemd'"
 
 - name: Enable differential backup timer
-  systemd:
+  ansible.builtin.systemd:
     name: "{{ pgbackrest_systemd_timer_name }}-diff.timer"
     enabled: true
     state: started
@@ -38,7 +26,7 @@
     - "ansible_service_mgr == 'systemd'"
 
 - name: Enable incremental backup timer
-  systemd:
+  ansible.builtin.systemd:
     name: "{{ pgbackrest_systemd_timer_name }}-incr.timer"
     enabled: true
     state: started

@@ -6,9 +6,6 @@
 # to an empty list ([]), no extra packages will be installed.
 pgbackrest_packages: null
 
-# The path on the local filesystem to store the pgbackrest repository.
-pgbackrest_repo_path: /var/lib/pgbackrest
-
 # Owner/User and group for processes and paths created by this role.
 pgbackrest_owner: postgres
 pgbackrest_group: postgres
@@ -31,13 +28,13 @@ pgbackrest_conf_dir_mode: "0755"
 # pgbackrest stanza configs go in here. The key for each entry is a stanza
 # name, and the contents will be added as key=value entries in the actual
 # config file under the [stanza_name] section(s)
-pgbackrest_conf_cluster_stanzas: {}
+pgbackrest_conf_cluster_stanzas:
+  global:
+    repo1-path: /var/lib/pgbackrest
+    repo1-retention-full: 1
 
 # Sets the log level for pgbackrest
 pgbackrest_log_level: info
-
-# repo1-retention-full option for pgbackrest in the [global] section:
-pgbackrest_repo_retention_full: 1
 
 # Client-side encryption options for the pgbackrest [global] section:
 # repo1-cipher-pass=
@@ -144,3 +141,11 @@ pgbackrest_postgresql_conf_marker: >-
 # can change it here if you need/want to)
 pgbackrest_postgresql_conf_marker_begin: "BEGIN"
 pgbackrest_postgresql_conf_marker_end: "END"
+
+# Service name and state for managing the Postgres instance.  This runs if
+# and when we update the postgresql config.  Even though the var name says
+# "handler", it's not actually run as a handler since we need to run it early
+# and don't want to flush all handlers just for this one process, so it only
+# runs when the postgres config returns 'changed' status.
+pgbackrest_postgresql_service_name: postgresql
+pgbackrest_postgresql_handler_service_state: reloaded
