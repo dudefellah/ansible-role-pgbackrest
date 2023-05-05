@@ -36,7 +36,7 @@
       {{ __pgbackrest_postgresql_rhel_repo_package[ansible_distribution]['default'] }}
       {%- endif -%}
   when:
-    - "ansible_os_family == 'RedHat'"
+    - ansible_os_family == 'RedHat'
   tags:
     - pgbackrest
 

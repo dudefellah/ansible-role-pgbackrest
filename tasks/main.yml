@@ -9,9 +9,9 @@
     key: "{{ _pgbackrest_postgresql_rhel_repo_rpm_key }}"
     state: present
   when:
-    - "ansible_os_family == 'RedHat'"
-    - "_pgbackrest_postgresql_rhel_repo_rpm_key is not none"
-    - "_pgbackrest_postgresql_rhel_repo_package is not none"
+    - ansible_os_family == 'RedHat'
+    - _pgbackrest_postgresql_rhel_repo_rpm_key is not none
+    - _pgbackrest_postgresql_rhel_repo_package is not none
   tags:
     - pgbackrest
 
@@ -21,8 +21,8 @@
     state: present
     update_cache: true
   when:
-    - "ansible_os_family == 'RedHat'"
-    - "_pgbackrest_postgresql_rhel_repo_package is not none"
+    - ansible_os_family == 'RedHat'
+    - _pgbackrest_postgresql_rhel_repo_package is not none
   tags:
     - pgbackrest
 
@@ -101,8 +101,8 @@
       {% endfor %}
   register: __pgbackrest_pg_upd_conf
   when:
-    - "pgbackrest_postgresql_conf"
-    - "_pgbackrest_postgresql_conf_path is not none"
+    - pgbackrest_postgresql_conf
+    - _pgbackrest_postgresql_conf_path is not none
   tags:
     - pgbackrest
 
@@ -115,8 +115,8 @@
     state: absent
   register: __pgbackrest_pg_rem_conf
   when:
-    - "not pgbackrest_postgresql_conf"
-    - "_pgbackrest_postgresql_conf_path is not none"
+    - not pgbackrest_postgresql_conf
+    - _pgbackrest_postgresql_conf_path is not none
   tags:
     - pgbackrest
 
@@ -175,7 +175,7 @@
     group: root
     mode: "0755"
   when:
-    - "pgbackrest_backup_script_path is not none"
+    - pgbackrest_backup_script_path is not none
   tags:
     - pgbackrest
 
@@ -187,7 +187,7 @@
     group: root
     mode: "0755"
   when:
-    - "pgbackrest_restore_script_path is not none"
+    - pgbackrest_restore_script_path is not none
   tags:
     - pgbackrest
 

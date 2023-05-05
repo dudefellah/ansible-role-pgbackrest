@@ -11,7 +11,7 @@
   register: stanza_check
   changed_when: false
   failed_when:
-    - "stanza_check.rc != 0"
+    - stanza_check.rc != 0
     - >-
       (
         ('has a stanza-create been performed?' not in stanza_check.stderr) and
@@ -50,12 +50,12 @@
       --log-level-console={{ pgbackrest_log_level }}
       backup
   when:
-    - "not pgbackrest_initial_backup"
+    - not pgbackrest_initial_backup
     - >-
       ('skipped' not in stanza_create_cmd) or
       (not stanza_create_cmd.skipped)
-    - "stanza_create_cmd.rc == 0"
-    - "'completed successfully' in stanza_create_cmd.stdout"
+    - stanza_create_cmd.rc == 0
+    - 'completed successfully' in stanza_create_cmd.stdout
   become: true
   become_user: "{{ pgbackrest_owner }}"
   tags:

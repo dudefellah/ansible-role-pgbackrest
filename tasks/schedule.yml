@@ -11,8 +11,8 @@
   loop_control:
     loop_var: _systemd_timer
   when:
-    - "ansible_service_mgr == 'systemd'"
-    - "not pgbackrest_systemd_timer_enabled"
+    - ansible_service_mgr == 'systemd'
+    - not pgbackrest_systemd_timer_enabled
   tags:
     - molecule-notest
     - pgbackrest
@@ -93,8 +93,8 @@
   vars:
     _pgbackrest_backup_type: full
   when:
-    - "ansible_service_mgr == 'systemd'"
-    - "pgbackrest_systemd_timer_enabled"
+    - ansible_service_mgr == 'systemd'
+    - pgbackrest_systemd_timer_enabled
   tags:
     - molecule-notest
     - pgbackrest
@@ -113,8 +113,8 @@
     pgbackrest_systemd_timer_oncalendar: "{{ pgbackrest_full_backup_systemd_timer_oncalendar }}"
     pgbackrest_systemd_timer_unit: "{{ pgbackrest_systemd_timer_name }}-full.service"
   when:
-    - "ansible_service_mgr == 'systemd'"
-    - "pgbackrest_systemd_timer_enabled"
+    - ansible_service_mgr == 'systemd'
+    - pgbackrest_systemd_timer_enabled
   tags:
     - molecule-notest
     - pgbackrest
@@ -131,9 +131,9 @@
   vars:
     _pgbackrest_backup_type: diff
   when:
-    - "ansible_service_mgr == 'systemd'"
-    - "pgbackrest_systemd_timer_enabled"
-    - "pgbackrest_diff_backup_systemd_timer_oncalendar is not none"
+    - ansible_service_mgr == 'systemd'
+    - pgbackrest_systemd_timer_enabled
+    - pgbackrest_diff_backup_systemd_timer_oncalendar is not none
   tags:
     - molecule-notest
     - pgbackrest
@@ -153,9 +153,9 @@
       {{ pgbackrest_diff_backup_systemd_timer_oncalendar }}
     pgbackrest_systemd_timer_unit: "{{ pgbackrest_systemd_timer_name }}-diff.service"
   when:
-    - "ansible_service_mgr == 'systemd'"
-    - "pgbackrest_systemd_timer_enabled"
-    - "pgbackrest_diff_backup_systemd_timer_oncalendar is not none"
+    - ansible_service_mgr == 'systemd'
+    - pgbackrest_systemd_timer_enabled
+    - pgbackrest_diff_backup_systemd_timer_oncalendar is not none
   tags:
     - molecule-notest
     - pgbackrest
@@ -172,9 +172,9 @@
   vars:
     _pgbackrest_backup_type: incr
   when:
-    - "ansible_service_mgr == 'systemd'"
-    - "pgbackrest_systemd_timer_enabled"
-    - "pgbackrest_incr_backup_systemd_timer_oncalendar is not none"
+    - ansible_service_mgr == 'systemd'
+    - pgbackrest_systemd_timer_enabled
+    - pgbackrest_incr_backup_systemd_timer_oncalendar is not none
   tags:
     - molecule-notest
     - pgbackrest
@@ -194,9 +194,9 @@
       {{ pgbackrest_incr_backup_systemd_timer_oncalendar }}
     pgbackrest_systemd_timer_unit: "{{ pgbackrest_systemd_timer_name }}-incr.service"
   when:
-    - "ansible_service_mgr == 'systemd'"
-    - "pgbackrest_systemd_timer_enabled"
-    - "pgbackrest_incr_backup_systemd_timer_oncalendar is not none"
+    - ansible_service_mgr == 'systemd'
+    - pgbackrest_systemd_timer_enabled
+    - pgbackrest_incr_backup_systemd_timer_oncalendar is not none
   tags:
     - molecule-notest
     - pgbackrest
@@ -225,8 +225,8 @@
       {%- endif -%}
   notify: systemctl daemon-reload
   when:
-    - "pgbackrest_cron_enabled"
-    - "not pgbackrest_systemd_timer_enabled"
+    - pgbackrest_cron_enabled
+    - not pgbackrest_systemd_timer_enabled
 
 - name: Install the pgbackrest differential backup cron job
   ansible.builtin.cron:
@@ -255,8 +255,8 @@
       {%- endif -%}
   notify: systemctl daemon-reload
   when:
-    - "pgbackrest_cron_enabled"
-    - "not pgbackrest_systemd_timer_enabled"
+    - pgbackrest_cron_enabled
+    - not pgbackrest_systemd_timer_enabled
 
 - name: Install the pgbackrest incremental backup cron job
   ansible.builtin.cron:
@@ -285,5 +285,5 @@
       {%- endif -%}
   notify: systemctl daemon-reload
   when:
-    - "pgbackrest_cron_enabled"
-    - "not pgbackrest_systemd_timer_enabled"
+    - pgbackrest_cron_enabled
+    - not pgbackrest_systemd_timer_enabled
